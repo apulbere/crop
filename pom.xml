@@ -6,7 +6,7 @@
 
     <groupId>com.apulbere</groupId>
     <artifactId>crop</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 
     <url>https://github.com/apulbere/crop</url>
     <description>A library around Java Persistence Criteria API, which simplifies building queries, particularly useful within REST SQL context</description>
@@ -72,6 +72,30 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.2.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <publishingServerId>sonatype-central</publishingServerId>
+                    <tokenEnabled>true</tokenEnabled>
+                </configuration>
             </plugin>
         </plugins>
     </build>

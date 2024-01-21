@@ -23,7 +23,15 @@ where
 ```
 
 There are a couple of easy steps to achieve the above:
-1. Define a DTO that contains all fields necessary for filtering. For example, if you want to do filtering on `String` type then you choose `StringCriteriaOperator` from `com.apulbere.crop.operator` package.
+1. Add the dependency
+```xml
+<dependency>
+    <groupId>com.apulbere</groupId>
+    <artifactId>crop</artifactId>
+    <version>0.1.0</version>
+</dependency>
+```
+2. Define a DTO that contains all fields necessary for filtering. For example, if you want to do filtering on `String` type then you choose `StringCriteriaOperator` from `com.apulbere.crop.operator` package.
 ```java
 @Getter
 @Setter
@@ -32,14 +40,14 @@ public class PetSearchCriteria {
     private LocalDateCriteriaOperator birthdate;
 }
 ```
-2. Create an instance of the service that will parse the query. It requires `EntityManager` in the constructor.
+3. Create an instance of the service that will parse the query. It requires `EntityManager` in the constructor.
 ```java
 @Bean
 CriteriaOperatorService cropService(EntityManager entityManager) {
     return new CriteriaOperatorService(entityManager);
 }
 ```
-3. Finally, invoke the service's `create` method with the root entity and filter object. The result is a builder that lets you match the entity's meta-model with each field from the DTO. When done, execute the query.
+4. Finally, invoke the service's `create` method with the root entity and filter object. The result is a builder that lets you match the entity's meta-model with each field from the DTO. When done, execute the query.
 ```java
 @GetMapping("/pets")
 List<PetRecord> search(PetSearchCriteria petSearchCriteria) {
