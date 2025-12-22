@@ -6,7 +6,7 @@
 
     <groupId>com.apulbere</groupId>
     <artifactId>crop</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
 
     <url>https://github.com/apulbere/crop</url>
     <description>A library around Java Persistence Criteria API, which simplifies building queries, particularly useful within REST SQL context</description>
