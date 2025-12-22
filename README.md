@@ -28,7 +28,7 @@ There are a couple of easy steps to achieve the above:
 <dependency>
     <groupId>md.adrian</groupId>
     <artifactId>crop</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.3</version>
 </dependency>
 ```
 2. Define a DTO that contains all fields necessary for filtering. For example, if you want to do filtering on `String` type then you choose `StringCriteriaOperator` from `md.adrian.crop.operator` package.
