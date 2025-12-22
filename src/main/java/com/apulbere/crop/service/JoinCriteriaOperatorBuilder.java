@@ -1,11 +1,11 @@
 package com.apulbere.crop.service;
 
 import com.apulbere.crop.operator.CriteriaOperator;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.Expression;
-import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.SingularAttribute;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -21,18 +21,22 @@ import java.util.function.Supplier;
 public class JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT extends BaseCriteriaOperatorBuilder<PARENT_ROOT, SEARCH>>
         extends BaseCriteriaOperatorBuilder<ROOT, SEARCH> {
 
-    private final Supplier<Join<PARENT_ROOT, ROOT>> joinRootSupplier;
+    private final Supplier<Path<ROOT>> joinRootSupplier;
     private final PARENT parent;
+    private final Function<Root<PARENT_ROOT>, Path<ROOT>> joinPathFunction;
+    private final List<Function<Root<PARENT_ROOT>, Predicate>> rootPredicates = new LinkedList<>();
 
     JoinCriteriaOperatorBuilder(
             CriteriaBuilder criteriaBuilder,
-            Supplier<Join<PARENT_ROOT, ROOT>> joinRootSupplier,
+            Supplier<Path<ROOT>> joinRootSupplier,
             SEARCH searchRequest,
-            PARENT parent
+            PARENT parent,
+            Function<Root<PARENT_ROOT>, Path<ROOT>> joinPathFunction
     ) {
         super(criteriaBuilder, searchRequest);
         this.joinRootSupplier = joinRootSupplier;
         this.parent = parent;
+        this.joinPathFunction = joinPathFunction;
     }
 
     @Override
@@ -43,7 +47,11 @@ public class JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT exten
         CriteriaOperator<SEARCH_FIELD> criteriaOperator = search.apply(searchRequest);
         if (criteriaOperator != null) {
             Expression<SEARCH_FIELD> expression = joinRootSupplier.get().get(attribute);
-            predicates.add(criteriaOperator.match(criteriaBuilder, expression));
+            addPredicateSupplier(cb -> criteriaOperator.match(cb, expression));
+            rootPredicates.add(parentRoot -> {
+                Path<ROOT> joinPath = joinPathFunction.apply(parentRoot);
+                return criteriaOperator.match(criteriaBuilder, joinPath.get(attribute));
+            });
         }
         return this;
     }
@@ -59,12 +67,13 @@ public class JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT exten
             JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT>> join(
             SingularAttribute<ROOT, JOIN_ROOT> joinAttribute
     ) {
-        Supplier<Join<ROOT, JOIN_ROOT>> joinRoot = () -> joinRootSupplier.get().join(joinAttribute);
+        Supplier<Path<JOIN_ROOT>> joinRoot = () -> joinRootSupplier.get().get(joinAttribute);
         return new JoinCriteriaOperatorBuilder<>(
                 criteriaBuilder,
                 joinRoot,
                 searchRequest,
-                this
+                this,
+                parentRoot -> joinRootSupplier.get().get(joinAttribute)
         );
     }
 
@@ -73,7 +82,16 @@ public class JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT exten
      * @return parent builder
      */
     public PARENT endJoin() {
-        parent.predicates.addAll(this.predicates);
+        parent.addAllPredicateSupplier(this);
+        if (parent instanceof CriteriaOperatorBuilder) {
+            @SuppressWarnings("unchecked")
+            CriteriaOperatorBuilder<PARENT_ROOT, SEARCH> criteriaParent = (CriteriaOperatorBuilder<PARENT_ROOT, SEARCH>) parent;
+            criteriaParent.addAllRootPredicates(rootPredicates);
+        }
         return parent;
+    }
+
+    List<Function<Root<PARENT_ROOT>, Predicate>> getRootPredicates() {
+        return rootPredicates;
     }
 }
