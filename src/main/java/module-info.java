@@ -1,9 +1,9 @@
-module com.apulbere.crop {
+module md.adrian.crop {
     requires jakarta.persistence;
 
-    exports com.apulbere.crop.operator;
-    exports com.apulbere.crop;
-    exports com.apulbere.crop.exception;
-    exports com.apulbere.crop.annotation;
-    exports com.apulbere.crop.service;
+    exports md.adrian.crop.operator;
+    exports md.adrian.crop;
+    exports md.adrian.crop.exception;
+    exports md.adrian.crop.annotation;
+    exports md.adrian.crop.service;
 }

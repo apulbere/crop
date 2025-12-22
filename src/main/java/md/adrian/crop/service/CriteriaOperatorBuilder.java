@@ -1,8 +1,8 @@
-package com.apulbere.crop.service;
+package md.adrian.crop.service;
 
-import com.apulbere.crop.CriteriaOperatorOrder;
-import com.apulbere.crop.CriteriaOperatorPage;
-import com.apulbere.crop.operator.CriteriaOperator;
+import md.adrian.crop.CriteriaOperatorOrder;
+import md.adrian.crop.CriteriaOperatorPage;
+import md.adrian.crop.operator.CriteriaOperator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.*;

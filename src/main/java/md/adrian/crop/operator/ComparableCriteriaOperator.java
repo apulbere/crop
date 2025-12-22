@@ -1,6 +1,6 @@
-package com.apulbere.crop.operator;
+package md.adrian.crop.operator;
 
-import com.apulbere.crop.exception.CriteriaOperatorException;
+import md.adrian.crop.exception.CriteriaOperatorException;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;

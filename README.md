@@ -26,12 +26,12 @@ There are a couple of easy steps to achieve the above:
 1. Add the dependency
 ```xml
 <dependency>
-    <groupId>com.apulbere</groupId>
+    <groupId>md.adrian</groupId>
     <artifactId>crop</artifactId>
     <version>0.1.0</version>
 </dependency>
 ```
-2. Define a DTO that contains all fields necessary for filtering. For example, if you want to do filtering on `String` type then you choose `StringCriteriaOperator` from `com.apulbere.crop.operator` package.
+2. Define a DTO that contains all fields necessary for filtering. For example, if you want to do filtering on `String` type then you choose `StringCriteriaOperator` from `md.adrian.crop.operator` package.
 ```java
 @Getter
 @Setter
