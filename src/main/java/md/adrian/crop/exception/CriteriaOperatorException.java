@@ -1,4 +1,4 @@
-package com.apulbere.crop.exception;
+package md.adrian.crop.exception;
 
 /**
  * The base exception class for the CriteriaOperator library.

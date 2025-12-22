@@ -1,4 +1,4 @@
-package com.apulbere.crop.operator;
+package md.adrian.crop.operator;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Expression;

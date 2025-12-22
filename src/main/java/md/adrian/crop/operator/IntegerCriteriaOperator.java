@@ -1,4 +1,4 @@
-package com.apulbere.crop.operator;
+package md.adrian.crop.operator;
 
 /**
  * Criteria Operator for {@code Integer} type.

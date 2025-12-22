@@ -1,4 +1,4 @@
-package com.apulbere.crop.annotation;
+package md.adrian.crop.annotation;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

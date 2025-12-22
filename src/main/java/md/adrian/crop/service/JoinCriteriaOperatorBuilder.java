@@ -1,6 +1,6 @@
-package com.apulbere.crop.service;
+package md.adrian.crop.service;
 
-import com.apulbere.crop.operator.CriteriaOperator;
+import md.adrian.crop.operator.CriteriaOperator;
 import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.SingularAttribute;
 

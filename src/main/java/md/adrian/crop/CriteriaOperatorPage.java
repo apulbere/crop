@@ -1,6 +1,6 @@
-package com.apulbere.crop;
+package md.adrian.crop;
 
-import com.apulbere.crop.annotation.Experimental;
+import md.adrian.crop.annotation.Experimental;
 
 /**
  * Contains field that limits the query fetched result.
