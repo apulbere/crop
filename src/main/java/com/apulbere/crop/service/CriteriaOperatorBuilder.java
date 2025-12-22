@@ -9,6 +9,7 @@ import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.ListAttribute;
 import jakarta.persistence.metamodel.SingularAttribute;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -26,22 +27,26 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
 
     private final EntityManager entityManager;
     private final CriteriaQuery<ROOT> criteriaQuery;
+    private final Class<ROOT> rootType;
     private final Root<ROOT> root;
     private final CriteriaOperatorOrder order;
     private final CriteriaOperatorPage page;
+    private final List<Function<Root<ROOT>, Predicate>> rootPredicates = new LinkedList<>();
 
     CriteriaOperatorBuilder(
-        EntityManager entityManager,
-        CriteriaBuilder criteriaBuilder,
-        CriteriaQuery<ROOT> criteriaQuery,
-        Root<ROOT> root,
-        SEARCH searchRequest,
-        CriteriaOperatorOrder order,
-        CriteriaOperatorPage page
+            EntityManager entityManager,
+            CriteriaBuilder criteriaBuilder,
+            CriteriaQuery<ROOT> criteriaQuery,
+            Class<ROOT> rootType,
+            Root<ROOT> root,
+            SEARCH searchRequest,
+            CriteriaOperatorOrder order,
+            CriteriaOperatorPage page
     ) {
         super(criteriaBuilder, searchRequest);
         this.entityManager = entityManager;
         this.criteriaQuery = criteriaQuery;
+        this.rootType = rootType;
         this.root = root;
         this.order = order;
         this.page = page;
@@ -55,7 +60,8 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
         CriteriaOperator<SEARCH_FIELD> criteriaOperator = search.apply(searchRequest);
         if (criteriaOperator != null) {
             var expression = root.get(attribute);
-            predicates.add(criteriaOperator.match(criteriaBuilder, expression));
+            addPredicateSupplier(cb -> criteriaOperator.match(cb, expression));
+            rootPredicates.add(r -> criteriaOperator.match(criteriaBuilder, r.get(attribute)));
         }
         return this;
     }
@@ -63,32 +69,33 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
     public <JOIN> JoinCriteriaOperatorBuilder<JOIN, SEARCH, ROOT, CriteriaOperatorBuilder<ROOT, SEARCH>> join(
         SingularAttribute<ROOT, JOIN> joinAttribute
     ) {
-        Supplier<Join<ROOT, JOIN>> joinRoot = () -> root.join(joinAttribute);
+        Supplier<Path<JOIN>> joinRoot = () -> root.get(joinAttribute);
         return new JoinCriteriaOperatorBuilder<>(
             criteriaBuilder,
             joinRoot,
             searchRequest,
-            this
+            this,
+            r -> r.get(joinAttribute)
         );
     }
 
     /**
      * Join with a {@code ListAttribute}.
-     * For example, in a one to many relation.
+     * For example, in a one-to-many relation.
      *
      * @param joinAttribute the attribute that is doing the join
      * @return the builder
-     * @param <JOIN>
      */
     public <JOIN> JoinCriteriaOperatorBuilder<JOIN, SEARCH, ROOT, CriteriaOperatorBuilder<ROOT, SEARCH>> join(
         ListAttribute<ROOT, JOIN> joinAttribute
     ) {
-        Supplier<Join<ROOT, JOIN>> joinRoot = () -> root.join(joinAttribute);
+        Supplier<Path<JOIN>> joinRoot = () -> root.join(joinAttribute);
         return new JoinCriteriaOperatorBuilder<>(
                 criteriaBuilder,
                 joinRoot,
                 searchRequest,
-                this
+                this,
+                r -> r.join(joinAttribute)
         );
     }
 
@@ -100,8 +107,8 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
      * @return the query
      */
     public TypedQuery<ROOT> getQuery() {
-        criteriaQuery.where(predicates.toArray(Predicate[]::new));
-        criteriaQuery.orderBy(createOrderBy());
+        criteriaQuery.where(getPredicates(criteriaBuilder));
+        criteriaQuery.orderBy(createOrderBy(criteriaBuilder));
 
         TypedQuery<ROOT> query = entityManager.createQuery(criteriaQuery);
 
@@ -122,17 +129,52 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
         return getQuery().getResultList();
     }
 
-    private List<Order> createOrderBy() {
+    /**
+     * Adds root predicates from a joined builder.
+     * @param predicates the predicates to add
+     */
+    void addAllRootPredicates(List<Function<Root<ROOT>, Predicate>> predicates) {
+        rootPredicates.addAll(predicates);
+    }
+
+    /**
+     * Builds count query with all matched criteria operators as predicates if any.
+     *
+     * @return count query
+     */
+    private TypedQuery<Long> getCountQuery() {
+        CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
+        Root<ROOT> countRoot = countQuery.from(rootType);
+        countQuery.select(criteriaBuilder.count(countRoot));
+
+        Predicate[] predicates = rootPredicates.stream()
+                .map(f -> f.apply(countRoot))
+                .toArray(Predicate[]::new);
+
+        countQuery.where(predicates);
+        return entityManager.createQuery(countQuery);
+    }
+
+    /**
+     * Builds the count query {@see CriteriaOperatorBuilder#getCountQuery()} and executes it.
+     *
+     * @return count of entities
+     */
+    public Long getCount() {
+        return getCountQuery().getSingleResult();
+    }
+
+    private List<Order> createOrderBy(CriteriaBuilder criteriaBuilder) {
         if (order == null || order.getOrder() == null) {
             return List.of();
         }
         return order.getOrder()
             .stream()
-            .map(this::toOrder)
+            .map(order -> toOrder(criteriaBuilder, order))
             .toList();
     }
 
-    private Order toOrder(String order) {
+    private Order toOrder(CriteriaBuilder criteriaBuilder, String order) {
         if (order.startsWith("-")) {
             return criteriaBuilder.desc(root.get(order.substring(1)));
         }

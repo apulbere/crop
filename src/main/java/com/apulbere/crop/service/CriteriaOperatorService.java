@@ -42,6 +42,7 @@ public class CriteriaOperatorService {
                 entityManager,
                 criteriaBuilder,
                 criteriaQuery,
+                clazz,
                 from,
                 searchCriteria,
                 order,

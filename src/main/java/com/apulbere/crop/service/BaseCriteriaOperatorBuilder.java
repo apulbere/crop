@@ -16,7 +16,7 @@ import java.util.function.Function;
  */
 public abstract class BaseCriteriaOperatorBuilder<ROOT, SEARCH> {
 
-    protected final List<Predicate> predicates = new LinkedList<>();
+    private final List<Function<CriteriaBuilder, Predicate>> predicates = new LinkedList<>();
     protected final CriteriaBuilder criteriaBuilder;
     protected final SEARCH searchRequest;
 
@@ -36,4 +36,16 @@ public abstract class BaseCriteriaOperatorBuilder<ROOT, SEARCH> {
     public abstract <SEARCH_FIELD> BaseCriteriaOperatorBuilder<ROOT, SEARCH> match(
         SingularAttribute<ROOT, SEARCH_FIELD> attribute, Function<SEARCH, ? extends CriteriaOperator<SEARCH_FIELD>> criteriaOperatorFunction
     );
+
+    protected void addPredicateSupplier(Function<CriteriaBuilder, Predicate> predicateSupplier) {
+        predicates.add(predicateSupplier);
+    }
+
+    protected Predicate[] getPredicates(CriteriaBuilder criteriaBuilder) {
+        return predicates.stream().map(f -> f.apply(criteriaBuilder)).toArray(Predicate[]::new);
+    }
+
+    protected void addAllPredicateSupplier(BaseCriteriaOperatorBuilder<?, ?> other) {
+        predicates.addAll(other.predicates);
+    }
 }
