@@ -1,6 +1,6 @@
 # CriteriaOperator (CrOp)
 
-CriteriaOperator is a lightweight, zero dependency, and type-safe wrapper around Java Persistence Criteria API, which simplifies building queries, particularly useful within REST SQL (RSQL) context.
+CriteriaOperator is a lightweight, zero dependency*, and type-safe wrapper around Java Persistence Criteria API, which simplifies building queries, particularly useful within REST SQL (RSQL) context.
 
 Example of REST query that can be interpreted by the library:
 
@@ -61,4 +61,6 @@ List<PetRecord> search(PetSearchCriteria petSearchCriteria) {
 }
 ```
 
-For full example and to see all the capabilities of the library checkout [pet-shop](https://github.com/apulbere/pet-shop-crop) demo repository.
+For full example and to see all the capabilities of the library checkout the `crop-test` module within this project, which contains integration tests and demonstrations of the library features.
+
+* Zero dependency means that the library does not bring any additional dependencies apart from those required by JPA itself. It uses Spring Framework for testing purposes only, and is not shipped with the library.
