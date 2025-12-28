@@ -16,5 +16,5 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Run tests
-        run: mvn --batch-mode clean test
+        run: mvn --batch-mode clean test -Pwith-tests
 

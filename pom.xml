@@ -34,7 +34,6 @@
 
     <modules>
         <module>crop</module>
-        <module>crop-test</module>
     </modules>
 
     <properties>
@@ -72,6 +71,13 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>with-tests</id>
+            <modules>
+                <module>crop-test</module>
+            </modules>
+        </profile>
+
         <profile>
             <id>publish-ossrh</id>
             <build>
