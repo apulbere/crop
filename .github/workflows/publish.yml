@@ -10,6 +10,12 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+      - name: Extract version from tag
+        id: extract_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
       - name: Set up Java for publishing to Maven Central Repository
         uses: actions/setup-java@v3
         with:
@@ -21,7 +27,7 @@ jobs:
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Publish to the Maven Central Repository
-        run: mvn --batch-mode deploy -Ppublish-ossrh
+        run: mvn --batch-mode deploy -Ppublish-ossrh -Drevision=${{ steps.extract_version.outputs.version }}
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
@@ -33,6 +39,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: Publish to GitHub Packages
-        run: mvn --batch-mode deploy -Ppublish-github
+        run: mvn --batch-mode deploy -Ppublish-github -Drevision=${{ steps.extract_version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

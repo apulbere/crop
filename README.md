@@ -70,3 +70,6 @@ For full example and to see all the capabilities of the library checkout the `cr
 **Note:** The `crop-test` module is disabled by default to keep the build lightweight. To build it:
 - **Locally:** Use `mvn clean install -Pwith-tests` to explicitly enable the test module
 - **In CI/CD:** The workflow explicitly activates the profile using `-Pwith-tests`
+
+**Building with custom version:** The project uses CI-friendly versioning. To build with a specific version: `mvn clean install -Drevision=1.0.0`
+
