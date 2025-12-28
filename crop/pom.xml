@@ -15,6 +15,10 @@
     <name>crop</name>
     <description>Core library for Java Persistence Criteria API simplification</description>
 
+    <properties>
+        <maven.deploy.skip>false</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>jakarta.persistence</groupId>
