@@ -27,7 +27,7 @@ jobs:
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Publish to the Maven Central Repository
-        run: mvn --batch-mode deploy -Ppublish-ossrh -Drevision=${{ steps.extract_version.outputs.version }}
+        run: mvn --batch-mode clean deploy -Ppublish-ossrh -Drevision=${{ steps.extract_version.outputs.version }}
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
@@ -39,6 +39,6 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       - name: Publish to GitHub Packages
-        run: mvn --batch-mode deploy -Ppublish-github -Drevision=${{ steps.extract_version.outputs.version }}
+        run: mvn --batch-mode clean deploy -Ppublish-github -Drevision=${{ steps.extract_version.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
