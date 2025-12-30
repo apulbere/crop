@@ -4,8 +4,6 @@ import md.adrian.crop.operator.CriteriaOperator;
 import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.SingularAttribute;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -24,7 +22,6 @@ public class JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT exten
     private final Supplier<Path<ROOT>> joinRootSupplier;
     private final PARENT parent;
     private final Function<Root<PARENT_ROOT>, Path<ROOT>> joinPathFunction;
-    private final List<Function<Root<PARENT_ROOT>, Predicate>> rootPredicates = new LinkedList<>();
 
     JoinCriteriaOperatorBuilder(
             CriteriaBuilder criteriaBuilder,
@@ -46,10 +43,8 @@ public class JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT exten
     ) {
         CriteriaOperator<SEARCH_FIELD> criteriaOperator = search.apply(searchRequest);
         if (criteriaOperator != null) {
-            Expression<SEARCH_FIELD> expression = joinRootSupplier.get().get(attribute);
-            addPredicateSupplier(cb -> criteriaOperator.match(cb, expression));
-            rootPredicates.add(parentRoot -> {
-                Path<ROOT> joinPath = joinPathFunction.apply(parentRoot);
+            addRootPredicateSupplier(parentRoot -> {
+                Path<ROOT> joinPath = joinPathFunction.apply((Root<PARENT_ROOT>) parentRoot);
                 return criteriaOperator.match(criteriaBuilder, joinPath.get(attribute));
             });
         }
@@ -82,16 +77,7 @@ public class JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT exten
      * @return parent builder
      */
     public PARENT endJoin() {
-        parent.addAllPredicateSupplier(this);
-        if (parent instanceof CriteriaOperatorBuilder) {
-            @SuppressWarnings("unchecked")
-            CriteriaOperatorBuilder<PARENT_ROOT, SEARCH> criteriaParent = (CriteriaOperatorBuilder<PARENT_ROOT, SEARCH>) parent;
-            criteriaParent.addAllRootPredicates(rootPredicates);
-        }
+        parent.addAllRootPredicateSupplier(this);
         return parent;
-    }
-
-    List<Function<Root<PARENT_ROOT>, Predicate>> getRootPredicates() {
-        return rootPredicates;
     }
 }
