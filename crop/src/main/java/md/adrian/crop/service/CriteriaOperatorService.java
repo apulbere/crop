@@ -3,9 +3,6 @@ package md.adrian.crop.service;
 import md.adrian.crop.CriteriaOperatorOrder;
 import md.adrian.crop.CriteriaOperatorPage;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Root;
 
 /**
  * The main API that helps to build the Query using criteria operators.
@@ -35,15 +32,9 @@ public class CriteriaOperatorService {
             CriteriaOperatorOrder order,
             CriteriaOperatorPage page
     ) {
-        CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
-        CriteriaQuery<R> criteriaQuery = criteriaBuilder.createQuery(clazz);
-        Root<R> from = criteriaQuery.from(clazz);
         return new CriteriaOperatorBuilder<>(
                 entityManager,
-                criteriaBuilder,
-                criteriaQuery,
                 clazz,
-                from,
                 searchCriteria,
                 order,
                 page

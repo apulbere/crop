@@ -5,7 +5,6 @@ import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.SingularAttribute;
 
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * {@inheritDoc}
@@ -19,19 +18,15 @@ import java.util.function.Supplier;
 public class JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT extends BaseCriteriaOperatorBuilder<PARENT_ROOT, SEARCH>>
         extends BaseCriteriaOperatorBuilder<ROOT, SEARCH> {
 
-    private final Supplier<Path<ROOT>> joinRootSupplier;
     private final PARENT parent;
     private final Function<Root<PARENT_ROOT>, Path<ROOT>> joinPathFunction;
 
     JoinCriteriaOperatorBuilder(
-            CriteriaBuilder criteriaBuilder,
-            Supplier<Path<ROOT>> joinRootSupplier,
             SEARCH searchRequest,
             PARENT parent,
             Function<Root<PARENT_ROOT>, Path<ROOT>> joinPathFunction
     ) {
-        super(criteriaBuilder, searchRequest);
-        this.joinRootSupplier = joinRootSupplier;
+        super(searchRequest);
         this.parent = parent;
         this.joinPathFunction = joinPathFunction;
     }
@@ -43,9 +38,9 @@ public class JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT exten
     ) {
         CriteriaOperator<SEARCH_FIELD> criteriaOperator = search.apply(searchRequest);
         if (criteriaOperator != null) {
-            addRootPredicateSupplier(parentRoot -> {
+            addRootPredicateSupplier((cb, parentRoot) -> {
                 Path<ROOT> joinPath = joinPathFunction.apply((Root<PARENT_ROOT>) parentRoot);
-                return criteriaOperator.match(criteriaBuilder, joinPath.get(attribute));
+                return criteriaOperator.match(cb, joinPath.get(attribute));
             });
         }
         return this;
@@ -62,13 +57,13 @@ public class JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT exten
             JoinCriteriaOperatorBuilder<ROOT, SEARCH, PARENT_ROOT, PARENT>> join(
             SingularAttribute<ROOT, JOIN_ROOT> joinAttribute
     ) {
-        Supplier<Path<JOIN_ROOT>> joinRoot = () -> joinRootSupplier.get().get(joinAttribute);
         return new JoinCriteriaOperatorBuilder<>(
-                criteriaBuilder,
-                joinRoot,
                 searchRequest,
                 this,
-                parentRoot -> joinRootSupplier.get().get(joinAttribute)
+                parentRoot -> {
+                    Path<ROOT> joinPath = joinPathFunction.apply((Root<PARENT_ROOT>) parentRoot);
+                    return joinPath.get(joinAttribute);
+                }
         );
     }
 
