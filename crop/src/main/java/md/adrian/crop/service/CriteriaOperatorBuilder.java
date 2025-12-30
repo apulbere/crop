@@ -9,7 +9,6 @@ import jakarta.persistence.criteria.*;
 import jakarta.persistence.metamodel.ListAttribute;
 import jakarta.persistence.metamodel.SingularAttribute;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -31,7 +30,6 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
     private final Root<ROOT> root;
     private final CriteriaOperatorOrder order;
     private final CriteriaOperatorPage page;
-    private final List<Function<Root<ROOT>, Predicate>> rootPredicates = new LinkedList<>();
 
     CriteriaOperatorBuilder(
             EntityManager entityManager,
@@ -59,9 +57,10 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
     ) {
         CriteriaOperator<SEARCH_FIELD> criteriaOperator = search.apply(searchRequest);
         if (criteriaOperator != null) {
-            var expression = root.get(attribute);
-            addPredicateSupplier(cb -> criteriaOperator.match(cb, expression));
-            rootPredicates.add(r -> criteriaOperator.match(criteriaBuilder, r.get(attribute)));
+            addRootPredicateSupplier(r -> {
+                Root<ROOT> typedRoot = (Root<ROOT>) r;
+                return criteriaOperator.match(criteriaBuilder, typedRoot.get(attribute));
+            });
         }
         return this;
     }
@@ -107,7 +106,7 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
      * @return the query
      */
     public TypedQuery<ROOT> getQuery() {
-        criteriaQuery.where(getPredicates(criteriaBuilder));
+        criteriaQuery.where(getRootPredicates(root));
         criteriaQuery.orderBy(createOrderBy(criteriaBuilder));
 
         TypedQuery<ROOT> query = entityManager.createQuery(criteriaQuery);
@@ -129,13 +128,6 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
         return getQuery().getResultList();
     }
 
-    /**
-     * Adds root predicates from a joined builder.
-     * @param predicates the predicates to add
-     */
-    void addAllRootPredicates(List<Function<Root<ROOT>, Predicate>> predicates) {
-        rootPredicates.addAll(predicates);
-    }
 
     /**
      * Builds count query with all matched criteria operators as predicates if any.
