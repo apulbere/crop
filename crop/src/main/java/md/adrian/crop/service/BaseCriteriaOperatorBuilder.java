@@ -8,6 +8,7 @@ import jakarta.persistence.metamodel.SingularAttribute;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -17,12 +18,10 @@ import java.util.function.Function;
  */
 public abstract class BaseCriteriaOperatorBuilder<ROOT, SEARCH> {
 
-    protected final List<Function<Root<?>, Predicate>> rootPredicates = new LinkedList<>();
-    protected final CriteriaBuilder criteriaBuilder;
+    protected final List<BiFunction<CriteriaBuilder, Root<?>, Predicate>> rootPredicates = new LinkedList<>();
     protected final SEARCH searchRequest;
 
-    protected BaseCriteriaOperatorBuilder(CriteriaBuilder criteriaBuilder, SEARCH searchRequest) {
-        this.criteriaBuilder = criteriaBuilder;
+    protected BaseCriteriaOperatorBuilder(SEARCH searchRequest) {
         this.searchRequest = searchRequest;
     }
 
@@ -38,12 +37,12 @@ public abstract class BaseCriteriaOperatorBuilder<ROOT, SEARCH> {
         SingularAttribute<ROOT, SEARCH_FIELD> attribute, Function<SEARCH, ? extends CriteriaOperator<SEARCH_FIELD>> criteriaOperatorFunction
     );
 
-    protected void addRootPredicateSupplier(Function<Root<?>, Predicate> rootPredicateSupplier) {
+    protected void addRootPredicateSupplier(BiFunction<CriteriaBuilder, Root<?>, Predicate> rootPredicateSupplier) {
         rootPredicates.add(rootPredicateSupplier);
     }
 
-    protected Predicate[] getRootPredicates(Root<?> root) {
-        return rootPredicates.stream().map(f -> f.apply(root)).toArray(Predicate[]::new);
+    protected Predicate[] getRootPredicates(CriteriaBuilder criteriaBuilder, Root<?> root) {
+        return rootPredicates.stream().map(f -> f.apply(criteriaBuilder, root)).toArray(Predicate[]::new);
     }
 
     protected void addAllRootPredicateSupplier(BaseCriteriaOperatorBuilder<?, ?> other) {

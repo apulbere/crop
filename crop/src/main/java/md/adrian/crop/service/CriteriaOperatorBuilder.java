@@ -11,7 +11,6 @@ import jakarta.persistence.metamodel.SingularAttribute;
 
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNullElse;
 
@@ -25,27 +24,20 @@ import static java.util.Objects.requireNonNullElse;
 public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorBuilder<ROOT, SEARCH> {
 
     private final EntityManager entityManager;
-    private final CriteriaQuery<ROOT> criteriaQuery;
     private final Class<ROOT> rootType;
-    private final Root<ROOT> root;
     private final CriteriaOperatorOrder order;
     private final CriteriaOperatorPage page;
 
     CriteriaOperatorBuilder(
             EntityManager entityManager,
-            CriteriaBuilder criteriaBuilder,
-            CriteriaQuery<ROOT> criteriaQuery,
             Class<ROOT> rootType,
-            Root<ROOT> root,
             SEARCH searchRequest,
             CriteriaOperatorOrder order,
             CriteriaOperatorPage page
     ) {
-        super(criteriaBuilder, searchRequest);
+        super(searchRequest);
         this.entityManager = entityManager;
-        this.criteriaQuery = criteriaQuery;
         this.rootType = rootType;
-        this.root = root;
         this.order = order;
         this.page = page;
     }
@@ -57,9 +49,9 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
     ) {
         CriteriaOperator<SEARCH_FIELD> criteriaOperator = search.apply(searchRequest);
         if (criteriaOperator != null) {
-            addRootPredicateSupplier(r -> {
+            addRootPredicateSupplier((cb, r) -> {
                 Root<ROOT> typedRoot = (Root<ROOT>) r;
-                return criteriaOperator.match(criteriaBuilder, typedRoot.get(attribute));
+                return criteriaOperator.match(cb, typedRoot.get(attribute));
             });
         }
         return this;
@@ -68,10 +60,7 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
     public <JOIN> JoinCriteriaOperatorBuilder<JOIN, SEARCH, ROOT, CriteriaOperatorBuilder<ROOT, SEARCH>> join(
         SingularAttribute<ROOT, JOIN> joinAttribute
     ) {
-        Supplier<Path<JOIN>> joinRoot = () -> root.get(joinAttribute);
         return new JoinCriteriaOperatorBuilder<>(
-            criteriaBuilder,
-            joinRoot,
             searchRequest,
             this,
             r -> r.get(joinAttribute)
@@ -88,10 +77,7 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
     public <JOIN> JoinCriteriaOperatorBuilder<JOIN, SEARCH, ROOT, CriteriaOperatorBuilder<ROOT, SEARCH>> join(
         ListAttribute<ROOT, JOIN> joinAttribute
     ) {
-        Supplier<Path<JOIN>> joinRoot = () -> root.join(joinAttribute);
         return new JoinCriteriaOperatorBuilder<>(
-                criteriaBuilder,
-                joinRoot,
                 searchRequest,
                 this,
                 r -> r.join(joinAttribute)
@@ -106,8 +92,12 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
      * @return the query
      */
     public TypedQuery<ROOT> getQuery() {
-        criteriaQuery.where(getRootPredicates(root));
-        criteriaQuery.orderBy(createOrderBy(criteriaBuilder));
+        CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+        CriteriaQuery<ROOT> criteriaQuery = criteriaBuilder.createQuery(rootType);
+        Root<ROOT> root = criteriaQuery.from(rootType);
+
+        criteriaQuery.where(getRootPredicates(criteriaBuilder, root));
+        criteriaQuery.orderBy(createOrderBy(criteriaBuilder, root));
 
         TypedQuery<ROOT> query = entityManager.createQuery(criteriaQuery);
 
@@ -135,13 +125,12 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
      * @return count query
      */
     private TypedQuery<Long> getCountQuery() {
+        CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
         CriteriaQuery<Long> countQuery = criteriaBuilder.createQuery(Long.class);
         Root<ROOT> countRoot = countQuery.from(rootType);
         countQuery.select(criteriaBuilder.count(countRoot));
 
-        Predicate[] predicates = rootPredicates.stream()
-                .map(f -> f.apply(countRoot))
-                .toArray(Predicate[]::new);
+        Predicate[] predicates = getRootPredicates(criteriaBuilder, countRoot);
 
         countQuery.where(predicates);
         return entityManager.createQuery(countQuery);
@@ -156,17 +145,17 @@ public class CriteriaOperatorBuilder<ROOT, SEARCH> extends BaseCriteriaOperatorB
         return getCountQuery().getSingleResult();
     }
 
-    private List<Order> createOrderBy(CriteriaBuilder criteriaBuilder) {
+    private List<Order> createOrderBy(CriteriaBuilder criteriaBuilder, Root<ROOT> root) {
         if (order == null || order.getOrder() == null) {
             return List.of();
         }
         return order.getOrder()
             .stream()
-            .map(order -> toOrder(criteriaBuilder, order))
+            .map(order -> toOrder(criteriaBuilder, root, order))
             .toList();
     }
 
-    private Order toOrder(CriteriaBuilder criteriaBuilder, String order) {
+    private Order toOrder(CriteriaBuilder criteriaBuilder, Root<ROOT> root, String order) {
         if (order.startsWith("-")) {
             return criteriaBuilder.desc(root.get(order.substring(1)));
         }
